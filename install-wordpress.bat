@@ -34,25 +34,29 @@ echo Please enter your database username (default is 'root'):
 set /p DB_USER=Database Username [root]: 
 if "%DB_USER%"=="" set DB_USER=root
 
-REM Prompt for Database Password (leave blank for no password)
+REM Prompt for Database Password (leave blank for default 'mysql')
 echo.
-echo Please enter your database password (leave blank for no password):
+echo Please enter your database password (leave blank for default 'mysql'):
 set /p DB_PASSWORD=Database Password: 
+if "%DB_PASSWORD%"=="" set DB_PASSWORD=mysql
 
 REM Prompt for WordPress Admin Username
 echo.
 echo Please enter your WordPress admin username:
 set /p WP_ADMIN=Admin Username: 
+if "%WP_ADMIN%"=="" set WP_ADMIN=admin
 
 REM Prompt for WordPress Admin Password
 echo.
 echo Please enter your WordPress admin password:
 set /p WP_ADMIN_PASSWORD=Admin Password: 
+if "%WP_ADMIN_PASSWORD%"=="" set WP_ADMIN_PASSWORD=admin
 
 REM Prompt for WordPress Admin Email
 echo.
 echo Please enter your WordPress admin email:
 set /p WP_ADMIN_EMAIL=Admin Email: 
+if "%WP_ADMIN_EMAIL%"=="" set WP_ADMIN_EMAIL=admin@gmail.com
 
 REM -------------------------------------
 REM Step 2: Set Derived Variables
@@ -60,6 +64,7 @@ REM -------------------------------------
 
 REM Define the WordPress URL based on the Project Name
 SET WP_URL=http://localhost/%PROJECT_NAME%
+SET WP_ADMIN_URL=http://localhost/%PROJECT_NAME%/wp-admin
 
 REM Define the WordPress Directory Path using the Project Name
 SET WPC=C:\Program Files\Ampps\www\%PROJECT_NAME%
@@ -120,7 +125,11 @@ echo.
 echo Creating MySQL database '%DB_NAME%'...
 
 REM Create the database
-%MYSQL_BIN% -u %DB_USER% -p %DB_PASSWORD% -e "CREATE DATABASE IF NOT EXISTS %DB_NAME%;"
+if "%DB_PASSWORD%"=="" (
+    %MYSQL_BIN% -u %DB_USER% -e "CREATE DATABASE IF NOT EXISTS %DB_NAME%;"
+) else (
+    %MYSQL_BIN% -u %DB_USER% -p%DB_PASSWORD% -e "CREATE DATABASE IF NOT EXISTS %DB_NAME%;"
+)
 
 REM Check if the database creation was successful
 if errorlevel 1 (
@@ -151,8 +160,6 @@ powershell -Command ^
 
 REM (Optional) Set the database host if different
 SET DB_HOST=localhost
-REM powershell -Command ^
-    "(Get-Content '%WPC%\wp-config.php') -replace 'localhost', '%DB_HOST%' | Set-Content '%WPC%\wp-config.php'"
 
 REM -------------------------------------
 REM Step 7: Install WordPress Using WP-CLI
@@ -162,7 +169,7 @@ echo.
 echo Installing WordPress using WP-CLI...
 
 REM Run the WP-CLI installation command
-php D:\wp-material\wp-cli\wp-cli.phar core install --url=%WP_URL% --title="%WP_TITLE%" --admin_user=%WP_ADMIN% --admin_password="%WP_ADMIN_PASSWORD%" --admin_email=%WP_ADMIN_EMAIL% --path="%WPC%"
+php D:\YHS_DEVPACK\wp-cli.phar core install --url=%WP_URL% --title="%WP_TITLE%" --admin_user=%WP_ADMIN% --admin_password="%WP_ADMIN_PASSWORD%" --admin_email=%WP_ADMIN_EMAIL% --path="%WPC%"
 
 REM Check if the installation was successful
 if errorlevel 1 (
@@ -174,8 +181,9 @@ if errorlevel 1 (
 echo.
 echo ==================================================
 echo      WordPress has been successfully installed!
-start 		%WP_URL%
+echo      Admin Url: %WP_ADMIN_URL%
 echo      Admin Username: %WP_ADMIN%
 echo      Admin Email: %WP_ADMIN_EMAIL%
 echo ==================================================
+start %WP_ADMIN_URL%
 pause
